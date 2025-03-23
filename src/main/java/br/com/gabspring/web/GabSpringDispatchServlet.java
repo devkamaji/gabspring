@@ -20,6 +20,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.util.Arrays;
 
 public class GabSpringDispatchServlet extends HttpServlet {
 
@@ -33,9 +34,6 @@ public class GabSpringDispatchServlet extends HttpServlet {
 
         PrintWriter out = new PrintWriter(resp.getWriter());
         Gson gson = new Gson();
-
-        //System.out.println("Received request: " + req.getMethod() + " " + req.getRequestURI());
-        //resp.getWriter().write("Hello from GabSpringDispatchServlet!");
 
         final var url = req.getRequestURI();
         final var httpMethod = req.getMethod().toUpperCase();
@@ -67,7 +65,7 @@ public class GabSpringDispatchServlet extends HttpServlet {
             if (controllerMethod.getParameterCount() > 0) {
                 GabLogger.log("GabDispatchServlet", "Method " + controllerMethod.getName() + " has parameters");
                 Object arg;
-                Parameter parameter = controllerMethod.getParameters()[0];
+                final var parameter = controllerMethod.getParameters()[0];
                 if (parameter.getAnnotations()[0].annotationType().getName().contains(GabBody.class.getName())) {
                     GabLogger.log("GabDispatchServlet", "Found parameter from request of type " + parameter.getType().getName());
                     final var body = readBytesFromRequest(req);
@@ -89,30 +87,38 @@ public class GabSpringDispatchServlet extends HttpServlet {
         }
     }
 
-    private void injectDependencies(Object controller) throws Exception {
-        for (Field attr: controller.getClass().getDeclaredFields()) {
-            String attrType = attr.getType().getName();
-            GabLogger.log("GabDispatchServlet", "Injecting dependencies for field " + attrType);
+    private void injectDependencies(Object controller) {
+        Arrays.stream(controller.getClass().getDeclaredFields()).forEach(attr -> {
+            final var attrType = attr.getType().getName();
+            GabLogger.log("GabDispatchServlet", String.format("Injecting dependencies for field %s", attrType));
             Object serviceImpl;
 
             if (DependencyInjectionMap.values.get(attrType) == null) {
-                GabLogger.log("GabDispatchServlet", "Couldn't find instance for " + attrType);
-                String implType = ServiceImplementationMap.implementations.get(attrType);
+                GabLogger.log("GabDispatchServlet", String.format("Couldn't find instance for %s", attrType));
+                final var implType = ServiceImplementationMap.implementations.get(attrType);
                 if (implType != null) {
-                    GabLogger.log("GabDispatchServlet", "Found instance for " + implType);
+                    GabLogger.log("GabDispatchServlet", String.format("Found instance for %s", implType));
                     serviceImpl = DependencyInjectionMap.values.get(implType);
                     if (serviceImpl == null) {
                         GabLogger.log("GabDispatchServlet", "Injecting new Object");
-                        serviceImpl = Class.forName(implType).getDeclaredConstructor().newInstance();
+                        try {
+                            serviceImpl = Class.forName(implType).getDeclaredConstructor().newInstance();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                         DependencyInjectionMap.values.put(implType, serviceImpl);
                     }
 
                     attr.setAccessible(true);
-                    attr.set(controller, serviceImpl);
+                    try {
+                        attr.set(controller, serviceImpl);
+                    } catch (IllegalAccessException e) {
+                        e.printStackTrace();
+                    }
                     GabLogger.log("GabDispatchServlet", "Injected Object successfully");
                 }
             }
-        }
+        });
     }
 
     private String readBytesFromRequest(HttpServletRequest req) throws IOException {

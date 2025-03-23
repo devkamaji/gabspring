@@ -1,10 +1,10 @@
 package br.com.gabspring.web;
 
-import br.com.gabspring.annotations.GabController;
 import br.com.gabspring.annotations.GabGetMethod;
 import br.com.gabspring.annotations.GabPostMethod;
 import br.com.gabspring.datastructures.ControllersMap;
 import br.com.gabspring.datastructures.RequestControllerData;
+import br.com.gabspring.datastructures.ServiceImplementationMap;
 import br.com.gabspring.explorer.ClassExplorer;
 import br.com.gabspring.util.GabLogger;
 import org.apache.catalina.Context;
@@ -61,6 +61,13 @@ public class GabSpringApplication {
                 if (classAnnotation.annotationType().getName().contains("GabController")) {
                     GabLogger.log("Metadata Explorer", "Found a Controller " + gabClass);
                     extractMethod(gabClass);
+                }
+                else if (classAnnotation.annotationType().getName().contains("GabService")) {
+                    GabLogger.log("Metadata Explorer", "Found a Service " + gabClass);
+                    for (Class<?> interface_ : Class.forName(gabClass).getInterfaces()){
+                        GabLogger.log("Metadata Explorer", "Class implements " + interface_.getName());
+                        ServiceImplementationMap.implementations.put(interface_.getName(), gabClass);
+                    }
                 }
             }
         }

@@ -1,8 +1,11 @@
 package br.com.gabspring.web;
 
 import br.com.gabspring.annotations.GabBody;
+import br.com.gabspring.annotations.GabInjected;
 import br.com.gabspring.datastructures.ControllerInstances;
 import br.com.gabspring.datastructures.ControllersMap;
+import br.com.gabspring.datastructures.DependencyInjectionMap;
+import br.com.gabspring.datastructures.ServiceImplementationMap;
 import br.com.gabspring.util.GabLogger;
 import com.google.gson.Gson;
 import jakarta.servlet.http.HttpServlet;
@@ -13,6 +16,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 
@@ -48,6 +53,7 @@ public class GabSpringDispatchServlet extends HttpServlet {
                 controller = Class.forName(requestControllerData.controllerClass()).getDeclaredConstructor().newInstance();
 
                 ControllerInstances.instances.put(requestControllerData.controllerClass(), controller);
+                injectDependencies(controller);
             }
 
             Method controllerMethod = null;
@@ -80,6 +86,32 @@ public class GabSpringDispatchServlet extends HttpServlet {
             out.close();
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    private void injectDependencies(Object controller) throws Exception {
+        for (Field attr: controller.getClass().getDeclaredFields()) {
+            String attrType = attr.getType().getName();
+            GabLogger.log("GabDispatchServlet", "Injecting dependencies for field " + attrType);
+            Object serviceImpl;
+
+            if (DependencyInjectionMap.values.get(attrType) == null) {
+                GabLogger.log("GabDispatchServlet", "Couldn't find instance for " + attrType);
+                String implType = ServiceImplementationMap.implementations.get(attrType);
+                if (implType != null) {
+                    GabLogger.log("GabDispatchServlet", "Found instance for " + implType);
+                    serviceImpl = DependencyInjectionMap.values.get(implType);
+                    if (serviceImpl == null) {
+                        GabLogger.log("GabDispatchServlet", "Injecting new Object");
+                        serviceImpl = Class.forName(implType).getDeclaredConstructor().newInstance();
+                        DependencyInjectionMap.values.put(implType, serviceImpl);
+                    }
+
+                    attr.setAccessible(true);
+                    attr.set(controller, serviceImpl);
+                    GabLogger.log("GabDispatchServlet", "Injected Object successfully");
+                }
+            }
         }
     }
 

@@ -3,6 +3,8 @@ package br.com.gabspring.web;
 import br.com.gabspring.annotations.GabController;
 import br.com.gabspring.annotations.GabGetMethod;
 import br.com.gabspring.annotations.GabPostMethod;
+import br.com.gabspring.datastructures.ControllersMap;
+import br.com.gabspring.datastructures.RequestControllerData;
 import br.com.gabspring.explorer.ClassExplorer;
 import br.com.gabspring.util.GabLogger;
 import org.apache.catalina.Context;
@@ -70,13 +72,26 @@ public class GabSpringApplication {
             for (Annotation annotation: method.getAnnotations()){
                 if (annotation.annotationType().getName().contains("GabGetMethod")) {
                     final var path = ((GabGetMethod)annotation).path();
-                    GabLogger.log("Metadata Explorer", "Found a Get Method " + method.getName() + " with path: " + path);
+                    //GabLogger.log("Metadata Explorer", "Found a Get Method " + method.getName() + " with path: " + path);
+
+                    definedStructures("GET", path, className, method);
                 }
                 else if (annotation.annotationType().getName().contains("GabPostMethod")) {
                     final var path = ((GabPostMethod)annotation).path();
-                    GabLogger.log("Metadata Explorer", "Found a Post Method " + method.getName() + " with path: " + path);
+                    //GabLogger.log("Metadata Explorer", "Found a Post Method " + method.getName() + " with path: " + path);
+
+                    definedStructures("POST", path, className, method);
                 }
             }
         }
+
+        for (RequestControllerData requestControllerData : ControllersMap.values.values()) {
+            GabLogger.log("", String.format("%s : %s [%s.%s]", requestControllerData.method(), requestControllerData.path(), requestControllerData.controllerClass(), requestControllerData.controllerMethod()));
+        }
+    }
+
+    private static void definedStructures(String httpMethod, String path, String className, Method method) {
+        final var requestControllerData = new RequestControllerData(httpMethod, path, className, method.getName());
+        ControllersMap.values.put(String.format("%s%s", httpMethod, path), requestControllerData);
     }
 }

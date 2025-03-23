@@ -28,6 +28,9 @@ Este projeto é um exemplo de como criar um framework web inspirado no Spring do
 3. **Despachante de Requisições**: O `GabSpringDispatchServlet` lida com as requisições HTTP, invocando os métodos apropriados dos controladores.
 
 ## 📚 Exemplo de Uso
+
+_Link para o exemplo de uso: [gabspringapp](https://github.com/devkamaji/gabspringapp)_
+
 ### Controlador
 ```java
 @GabController

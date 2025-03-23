@@ -2,7 +2,7 @@ package br.com.gabspring.util;
 
 import java.time.format.DateTimeFormatter;
 
-import static java.time.LocalTime.now;
+import static java.time.LocalDateTime.now;
 
 public class GabLogger {
     public static final String GREEN = "\u001B[32m";

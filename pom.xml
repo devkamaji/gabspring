@@ -7,11 +7,20 @@
     <groupId>br.com</groupId>
     <artifactId>gabspring</artifactId>
     <version>1.0-SNAPSHOT</version>
+    <name>GabSpring - Framework Web</name>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
-    
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.tomcat.embed</groupId>
+            <artifactId>tomcat-embed-core</artifactId>
+            <version>11.0.5</version>
+        </dependency>
+    </dependencies>
+
 </project>

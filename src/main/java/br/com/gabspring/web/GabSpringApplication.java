@@ -1,5 +1,8 @@
 package br.com.gabspring.web;
 
+import br.com.gabspring.annotations.GabController;
+import br.com.gabspring.annotations.GabGetMethod;
+import br.com.gabspring.annotations.GabPostMethod;
 import br.com.gabspring.explorer.ClassExplorer;
 import br.com.gabspring.util.GabLogger;
 import org.apache.catalina.Context;
@@ -7,6 +10,8 @@ import org.apache.catalina.connector.Connector;
 import org.apache.catalina.startup.Tomcat;
 
 import java.io.File;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
 import java.util.logging.Logger;
 
 public class GabSpringApplication {
@@ -24,11 +29,7 @@ public class GabSpringApplication {
             Connector connector = new Connector();
             connector.setPort(8080);
 
-            final var allClasses = ClassExplorer.retrieveAllClasses(sourceClass);
-
-            for (String s : allClasses) {
-                GabLogger.log("ClassExplorer", "class found: " + s);
-            }
+            extractMetadata(sourceClass);
 
             GabLogger.log("Embeded Web Container", "GabSpringApplication started on port " + connector.getPort());
 
@@ -40,10 +41,42 @@ public class GabSpringApplication {
 
             tomcat.start();
             end = System.currentTimeMillis();
-            GabLogger.log("Embeded Web Container", "GabSpringApplication started in " + ((double) (end - start)/1000) + " seconds");
+            GabLogger.log("Embeded Web Container", "GabSpringApplication started in " + ((double) (end - start) / 1000) + " seconds");
             tomcat.getServer().await();
         } catch (Exception e) {
             e.fillInStackTrace();
+        }
+    }
+
+    private static void extractMetadata(Class<?> sourceClass) throws Exception {
+
+        final var allClasses = ClassExplorer.retrieveAllClasses(sourceClass);
+
+        for (String gabClass : allClasses) {
+            //GabLogger.log("ClassExplorer", "class found: " + gabClass);
+            Annotation[] annotations = Class.forName(gabClass).getAnnotations();
+            for (Annotation classAnnotation : annotations) {
+                if (classAnnotation.annotationType().getName().contains("GabController")) {
+                    GabLogger.log("Metadata Explorer", "Found a Controller " + gabClass);
+                    extractMethod(gabClass);
+                }
+            }
+        }
+    }
+
+    private static void extractMethod(String className) throws Exception {
+
+        for (Method method : Class.forName(className).getDeclaredMethods()) {
+            for (Annotation annotation: method.getAnnotations()){
+                if (annotation.annotationType().getName().contains("GabGetMethod")) {
+                    final var path = ((GabGetMethod)annotation).path();
+                    GabLogger.log("Metadata Explorer", "Found a Get Method " + method.getName() + " with path: " + path);
+                }
+                else if (annotation.annotationType().getName().contains("GabPostMethod")) {
+                    final var path = ((GabPostMethod)annotation).path();
+                    GabLogger.log("Metadata Explorer", "Found a Post Method " + method.getName() + " with path: " + path);
+                }
+            }
         }
     }
 }
